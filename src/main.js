@@ -38,7 +38,7 @@ new Vue({
 		:step="1"
 		:reverse="false"
 		formatter="{value}€"
-		direction="horizontal">
+		direction="vertical">
 	</range-slider>
 </main>`
 })
