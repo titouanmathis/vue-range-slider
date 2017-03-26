@@ -6,7 +6,7 @@ new Vue({
 	data() {
 		return {
 			MODEL: [15, 50],
-			MODEL2: [ 100, 400 ]
+			MODEL2: [ 3, 10 ]
 		}
 	},
 	components: {
@@ -15,6 +15,7 @@ new Vue({
 	template: `
 <main>
 	<h3 v-html="MODEL"></h3>
+	<br>
 	<range-slider
 		v-model="MODEL"
 		:min="0"
@@ -33,8 +34,8 @@ new Vue({
 	<h3 v-html="MODEL2"></h3>
 	<range-slider
 		v-model="MODEL2"
-		:min="100"
-		:max="500"
+		:min="0"
+		:max="20"
 		:step="1"
 		:reverse="false"
 		formatter="{value}€"
