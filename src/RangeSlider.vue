@@ -40,16 +40,16 @@
 				type: String,
 				default: 'horizontal'
 			},
-			reverse: {
-				type: Boolean,
-				default: false
-			},
 			value: {
 				type: Array,
 				default() {
 					return [0, 100]
 				}
 			},
+			lazy: {
+				type: Boolean,
+				default: false
+			}
 		},
 		data() {
 			return {
@@ -77,6 +77,12 @@
 				$currentTarget: null
 			}
 		},
+		computed: {
+			DECIMALS() {
+				let decimals = `${this.step}`.split('.')[1]
+				return decimals ? decimals.length : 0
+			}
+		},
 		methods: {
 
 			/**
@@ -88,17 +94,24 @@
 				this.CONTROL_MAX.X = this.value[1] * this.SLIDER_WIDTH / this.max
 				this.CONTROL_MAX.Y = this.value[1] * this.SLIDER_HEIGHT / this.max
 
+
+				let VALUE_MIN
+				let VALUE_MAX
+
 				if (this.orientation === 'horizontal') {
 					this.$filled.style.left = `${this.CONTROL_MIN.X}px`
 					this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
-					this.CONTROL_MIN.VALUE = Math.round((this.CONTROL_MIN.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
-					this.CONTROL_MAX.VALUE = Math.round((this.CONTROL_MAX.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
+					VALUE_MIN = Math.round((this.CONTROL_MIN.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
+					VALUE_MAX = Math.round((this.CONTROL_MAX.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
 				} else {
 					this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
 					this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
-					this.CONTROL_MIN.VALUE = Math.round((this.CONTROL_MIN.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
-					this.CONTROL_MAX.VALUE = Math.round((this.CONTROL_MAX.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
+					VALUE_MIN = Math.round((this.CONTROL_MIN.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
+					VALUE_MAX = Math.round((this.CONTROL_MAX.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
 				}
+
+				this.CONTROL_MIN.VALUE = VALUE_MIN.toFixed(this.DECIMALS)
+				this.CONTROL_MAX.VALUE = VALUE_MAX.toFixed(this.DECIMALS)
 
 				this.forEach(this.$controls, ($control) => {
 					const TYPE = $control.__TYPE
@@ -248,6 +261,7 @@
 
 				if (this.$currentTarget !== null) {
 					const TYPE = this.$currentTarget.__TYPE
+					let VALUE;
 
 					// Horizontal layout
 					if (this.orientation === 'horizontal') {
@@ -257,7 +271,7 @@
 						this.$filled.style.left = `${this.CONTROL_MIN.X}px`
 						this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
 
-						this[TYPE].VALUE = Math.round((this[TYPE].X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
+						VALUE = Math.round((this[TYPE].X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
 					}
 
 					// Vertical layout
@@ -268,8 +282,12 @@
 						this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
 						this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
 
-						this[TYPE].VALUE = Math.round((this[TYPE].Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
+						VALUE = Math.round((this[TYPE].Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
 					}
+
+					this[TYPE].VALUE = VALUE.toFixed(this.DECIMALS)
+
+					if (!this.lazy) this.emitValue()
 				}
 				requestAnimationFrame(this.loop.bind(this))
 			},
