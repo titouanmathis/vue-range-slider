@@ -13,8 +13,6 @@
 </template>
 
 <script>
-	import forEach from 'foreach'
-
 	export default {
 		name: 'range-slider',
 		props: {
@@ -55,8 +53,6 @@
 		},
 		data() {
 			return {
-				MIN: this.value[0],
-				MAX: this.value[1],
 				IS_LOOPING: false,
 				EASE: 0.25,
 				POINTER_X: 0,
@@ -83,6 +79,97 @@
 		},
 		methods: {
 
+			/**
+			 * Initialize the controls positions
+			 */
+			init() {
+				this.CONTROL_MIN.X = this.value[0] * this.SLIDER_WIDTH / this.max
+				this.CONTROL_MIN.Y = this.value[0] * this.SLIDER_HEIGHT / this.max
+				this.CONTROL_MAX.X = this.value[1] * this.SLIDER_WIDTH / this.max
+				this.CONTROL_MAX.Y = this.value[1] * this.SLIDER_HEIGHT / this.max
+
+				if (this.direction === 'horizontal') {
+					this.$filled.style.left = `${this.CONTROL_MIN.X}px`
+					this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
+					this.CONTROL_MIN.VALUE = Math.round((this.CONTROL_MIN.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
+					this.CONTROL_MAX.VALUE = Math.round((this.CONTROL_MAX.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
+				} else {
+					this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
+					this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
+					this.CONTROL_MIN.VALUE = Math.round((this.CONTROL_MIN.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
+					this.CONTROL_MAX.VALUE = Math.round((this.CONTROL_MAX.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
+				}
+
+				this.forEach(this.$controls, ($control) => {
+					const TYPE = $control.__TYPE;
+					if (this.direction === 'horizontal') {
+						$control.style.transform = `translate3d(${this[TYPE].X}px, 0, 0)`
+					} else {
+						$control.style.transform = `translate3d(0, ${this[TYPE].Y}px, 0)`
+					}
+				})
+			},
+
+
+
+			/**
+			 * Start updating values and position
+			 *
+			 * @param  {Object} $target   The current targetted $control
+			 * @param  {Number} POINTER_X The current pointer X position
+			 * @param  {Number} POINTER_Y The current pointer Y position
+			 */
+			start($target, POINTER_X, POINTER_Y) {
+				this.updatePointerPosition(POINTER_X, POINTER_Y);
+				this.X = this.getX($target.__TYPE)
+				this.Y = this.getY($target.__TYPE)
+				this.$currentTarget = $target
+				this.IS_LOOPING = true
+			},
+
+
+
+			/**
+			 * End updating values and position,
+			 * emit the current values
+			 */
+			end() {
+				this.$currentTarget = null
+				this.IS_LOOPING = false
+				this.emitValue()
+			},
+
+
+
+			/**
+			 * Update the pointer's position vars
+			 *
+			 * @param  {Number} X The pointer's current X position
+			 * @param  {Number} Y The pointer's current Y position
+			 */
+			updatePointerPosition(X, Y) {
+				this.POINTER_X = X
+				this.POINTER_Y = Y
+			},
+
+
+
+			/**
+			 * Update the range slider sizes' vars
+			 */
+			updateSizes() {
+				console.log('updateSizes');
+				const SIZES = this.$slider.getBoundingClientRect()
+
+				this.SLIDER_WIDTH = SIZES.width
+				this.SLIDER_HEIGHT = SIZES.height
+
+				this.X_MIN = SIZES.left
+				this.X_MAX = SIZES.left + SIZES.width
+
+				this.Y_MIN = SIZES.top
+				this.Y_MAX = SIZES.top + SIZES.height
+			},
 
 
 			/**
@@ -109,72 +196,13 @@
 
 
 			/**
-			 * Dispatch events to their handler
+			 * Get the current control X position
+			 * in function of the slider's size and
+			 * the other control's X position
 			 *
-			 * @param  {Object} e The event's object
+			 * @param  {String} TYPE The type of the current control
+			 * @return {Number}      The current X position
 			 */
-			handleEvent(e) {
-				try {
-					this[`${e.type}Handler`](e)
-				} catch(e) {}
-			},
-
-
-			saveSizes() {
-				console.log('saveSizes');
-				const SIZES = this.$slider.getBoundingClientRect()
-
-				this.SLIDER_WIDTH = SIZES.width
-				this.SLIDER_HEIGHT = SIZES.height
-
-				this.X_MIN = SIZES.left
-				this.X_MAX = SIZES.left + SIZES.width
-
-				this.Y_MIN = SIZES.top
-				this.Y_MAX = SIZES.top + SIZES.height
-			},
-
-			start($target, POINTER_X, POINTER_Y) {
-				this.updatePointerPosition(POINTER_X, POINTER_Y);
-				this.X = this.getX($target.__TYPE)
-				this.Y = this.getY($target.__TYPE)
-				this.$currentTarget = $target
-				this.IS_LOOPING = true
-			},
-
-			end() {
-				this.$currentTarget = null
-				this.IS_LOOPING = false
-				this.emitValue()
-			},
-
-			resizeHandler(e) {
-				this.saveSizes()
-			},
-
-			mousedownHandler({ target, clientX , clientY }) {
-				document.addEventListener('mousemove', this);
-				document.addEventListener('mouseup', this);
-				this.start(target, clientX, clientY);
-			},
-
-
-			mouseupHandler(e) {
-				document.removeEventListener('mousemove', this);
-				document.removeEventListener('mouseup', this);
-				this.end()
-			},
-
-			mousemoveHandler({ clientX , clientY }) {
-				this.updatePointerPosition(clientX, clientY);
-			},
-
-			updatePointerPosition(X, Y) {
-				this.POINTER_X = X
-				this.POINTER_Y = Y
-			},
-
-
 			getX(TYPE) {
 				const X = this.POINTER_X < this.X_MIN ? 0 : this.POINTER_X > this.X_MAX ? this.SLIDER_WIDTH : this.POINTER_X - this.X_MIN
 
@@ -185,6 +213,16 @@
 				}
 			},
 
+
+
+			/**
+			 * Get the current control Y position
+			 * in function of the slider's size and
+			 * the other control's Y position
+			 *
+			 * @param  {String} TYPE The type of the current control
+			 * @return {Number}      The current Y position
+			 */
 			getY(TYPE) {
 				const Y = this.POINTER_Y < this.Y_MIN ? 0 : this.POINTER_Y > this.Y_MAX ? this.SLIDER_HEIGHT : this.POINTER_Y - this.Y_MIN
 
@@ -195,6 +233,11 @@
 				}
 			},
 
+
+
+			/**
+			 * The loop responsible for all the good stuff
+			 */
 			loop() {
 				if (this.IS_DESTROYED || !this.IS_LOOPING) return false
 
@@ -222,45 +265,97 @@
 
 						this[TYPE].VALUE = Math.round((this[TYPE].Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
 					}
-
-					this.emitValue()
 				}
 				requestAnimationFrame(this.loop.bind(this))
 			},
 
-			initPositions() {
-				this.CONTROL_MIN.X = this.value[0] * this.SLIDER_WIDTH / this.max
-				this.CONTROL_MIN.Y = this.value[0] * this.SLIDER_HEIGHT / this.max
-				this.CONTROL_MAX.X = this.value[1] * this.SLIDER_WIDTH / this.max
-				this.CONTROL_MAX.Y = this.value[1] * this.SLIDER_HEIGHT / this.max
 
-				if (this.direction === 'horizontal') {
-					this.$filled.style.left = `${this.CONTROL_MIN.X}px`
-					this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
-					this.CONTROL_MIN.VALUE = Math.round((this.CONTROL_MIN.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
-					this.CONTROL_MAX.VALUE = Math.round((this.CONTROL_MAX.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
-				} else {
-					this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
-					this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
-					this.CONTROL_MIN.VALUE = Math.round((this.CONTROL_MIN.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
-					this.CONTROL_MAX.VALUE = Math.round((this.CONTROL_MAX.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
+
+			/**
+			 * Helper to loop over a nodeList
+			 *
+			 * @param  {Array|NodeList}  array
+			 * @param  {Function}        callback
+			 * @param  {Object}          scope
+			 */
+			forEach(array, callback, scope) {
+				const length = array.length
+				for (let i = 0; i < length; i++) {
+					callback.call(scope, array[i], i)
 				}
+			},
 
-				forEach(this.$controls, ($control) => {
-					const TYPE = $control.__TYPE;
-					if (this.direction === 'horizontal') {
-						$control.style.transform = `translate3d(${this[TYPE].X}px, 0, 0)`
-					} else {
-						$control.style.transform = `translate3d(0, ${this[TYPE].Y}px, 0)`
-					}
-				})
-			}
+
+
+			/**
+			 * Dispatch events to their handler
+			 *
+			 * @param  {Object} e The event's object
+			 */
+			handleEvent(e) {
+				try {
+					this[`${e.type}Handler`](e)
+				} catch(e) {}
+			},
+
+
+
+			/**
+			 * Window resize event's handler
+			 *
+			 * @param  {Object} e The event's object
+			 */
+			resizeHandler(e) {
+				this.updateSizes()
+			},
+
+
+
+			/**
+			 * The controls mousedown events' handler
+			 *
+			 * @param  {Object} event.target  The target of the event
+			 * @param  {Number} event.clientX The current X pointer position
+			 * @param  {Number} event.clientY The current Y pointer position
+			 */
+			mousedownHandler({ target, clientX , clientY }) {
+				document.addEventListener('mousemove', this);
+				document.addEventListener('mouseup', this);
+				this.start(target, clientX, clientY);
+			},
+
+
+
+			/**
+			 * Document mouseup event's handler
+			 *
+			 * @param  {Object} e The event's object
+			 */
+			mouseupHandler(e) {
+				document.removeEventListener('mousemove', this);
+				document.removeEventListener('mouseup', this);
+				this.end()
+			},
+
+
+
+			/**
+			 * Document mousemove event's handler
+			 *
+			 * @param  {Number} options.clientX The current X pointer position
+			 * @param  {Number} options.clientY The current Y pointer position
+			 */
+			mousemoveHandler({ clientX , clientY }) {
+				this.updatePointerPosition(clientX, clientY);
+			},
 		},
+
 		watch: {
 			IS_LOOPING(newValue) {
 				if (newValue) this.loop()
 			}
 		},
+
 		mounted() {
 			this.IS_DESTROYED = false
 
@@ -271,11 +366,12 @@
 			this.$controls[0].__TYPE = 'CONTROL_MIN'
 			this.$controls[1].__TYPE = 'CONTROL_MAX'
 
-			this.saveSizes();
-			this.initPositions()
+			this.updateSizes();
+			this.init()
 
 			window.addEventListener('resize', this)
 		},
+
 		beforeDestroy() {
 			this.IS_DESTROYED = true
 			window.removeEventListener('resize', this)
