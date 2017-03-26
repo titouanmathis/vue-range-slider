@@ -1,5 +1,5 @@
 <template>
-	<div class="range-slider" :class="`range-slider--${direction}`">
+	<div class="range-slider" :class="`range-slider--${orientation}`">
 		<div class="range-slider__track">
 			<div class="range-slider__filled"></div>
 		</div>
