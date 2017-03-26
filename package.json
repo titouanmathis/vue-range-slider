@@ -1,7 +1,7 @@
 {
   "name": "vue-range-slider",
   "description": "A simple Vue.js range slider component",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "Titouan Mathis <titouan.mathis@gmail.com>",
   "private": true,
   "scripts": {
