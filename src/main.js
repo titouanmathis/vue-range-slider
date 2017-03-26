@@ -5,8 +5,23 @@ new Vue({
 	el: '#app',
 	data() {
 		return {
-			MODEL: [15, 50],
-			MODEL2: [ 100, 400 ]
+			MODEL_HORIZONTAL: [15, 50],
+			MODEL_VERTICAL: [3, 12],
+			style: {
+				section: {
+					display: 'flex',
+					alignItems: 'center',
+					justifyContent: 'center',
+					flexDirection: 'column',
+					minWidth: '250px',
+					marginBottom: '1em',
+					padding: '3em',
+					textAlign: 'center'
+				},
+				rangeSlider: {
+					marginTop: '2em'
+				}
+			}
 		}
 	},
 	components: {
@@ -14,31 +29,29 @@ new Vue({
 	},
 	template: `
 <main>
-	<h3 v-html="MODEL"></h3>
-	<range-slider
-		v-model="MODEL"
-		:min="0"
-		:max="100"
-		:step="1"
-		:reverse="false"
-		formatter="{value}€"
-		direction="horizontal">
-	</range-slider>
-
-
-	<br>
-	<br>
-	<br>
-	<br>
-	<h3 v-html="MODEL2"></h3>
-	<range-slider
-		v-model="MODEL2"
-		:min="100"
-		:max="500"
-		:step="1"
-		:reverse="false"
-		formatter="{value}€"
-		direction="horizontal">
-	</range-slider>
+	<section :style="style.section">
+		<h3 v-html="MODEL_HORIZONTAL"></h3>
+		<range-slider
+			v-model="MODEL_HORIZONTAL"
+			:min="0"
+			:max="100"
+			:step="1"
+			formatter="{value}€"
+			orientation="horizontal"
+			:style="style.rangeSlider">
+		</range-slider>
+	</section>
+	<section :style="style.section">
+		<h3 v-html="MODEL_VERTICAL"></h3>
+		<range-slider
+			v-model="MODEL_VERTICAL"
+			:min="0"
+			:max="20"
+			:step="0.1"
+			:lazy="true"
+			formatter="{value}kg"
+			orientation="vertical">
+		</range-slider>
+	</section>
 </main>`
 })
