@@ -3,10 +3,10 @@
 		<div class="range-slider__track">
 			<div class="range-slider__filled"></div>
 		</div>
-		<div class="range-slider__control range-slider__control--min" @mousedown="mousedownHandler">
+		<div class="range-slider__control range-slider__control--min" @mousedown="mousedownHandler" @touchstart="touchstartHandler">
 			<span class="range-slider__tooltip range-slider__tooltip--top" v-html="formatValue(CONTROL_MIN.VALUE)"></span>
 		</div>
-		<div class="range-slider__control range-slider__control--max" @mousedown="mousedownHandler">
+		<div class="range-slider__control range-slider__control--max" @mousedown="mousedownHandler" @touchstart="touchstartHandler">
 			<span class="range-slider__tooltip range-slider__tooltip--bottom" v-html="formatValue(CONTROL_MAX.VALUE)"></span>
 		</div>
 	</div>
@@ -36,7 +36,7 @@
 				type: String,
 				default: '{value}'
 			},
-			direction: {
+			orientation: {
 				type: String,
 				default: 'horizontal'
 			},
@@ -88,7 +88,7 @@
 				this.CONTROL_MAX.X = this.value[1] * this.SLIDER_WIDTH / this.max
 				this.CONTROL_MAX.Y = this.value[1] * this.SLIDER_HEIGHT / this.max
 
-				if (this.direction === 'horizontal') {
+				if (this.orientation === 'horizontal') {
 					this.$filled.style.left = `${this.CONTROL_MIN.X}px`
 					this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
 					this.CONTROL_MIN.VALUE = Math.round((this.CONTROL_MIN.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
@@ -101,8 +101,8 @@
 				}
 
 				this.forEach(this.$controls, ($control) => {
-					const TYPE = $control.__TYPE;
-					if (this.direction === 'horizontal') {
+					const TYPE = $control.__TYPE
+					if (this.orientation === 'horizontal') {
 						$control.style.transform = `translate3d(${this[TYPE].X}px, 0, 0)`
 					} else {
 						$control.style.transform = `translate3d(0, ${this[TYPE].Y}px, 0)`
@@ -120,7 +120,13 @@
 			 * @param  {Number} POINTER_Y The current pointer Y position
 			 */
 			start($target, POINTER_X, POINTER_Y) {
-				this.updatePointerPosition(POINTER_X, POINTER_Y);
+				// Make sure our target is the
+				// control and not the tooltip
+				if (!$target.__TYPE) {
+					$target = $target.parentElement
+				}
+
+				this.updatePointerPosition(POINTER_X, POINTER_Y)
 				this.X = this.getX($target.__TYPE)
 				this.Y = this.getY($target.__TYPE)
 				this.$currentTarget = $target
@@ -158,7 +164,6 @@
 			 * Update the range slider sizes' vars
 			 */
 			updateSizes() {
-				console.log('updateSizes');
 				const SIZES = this.$slider.getBoundingClientRect()
 
 				this.SLIDER_WIDTH = SIZES.width
@@ -177,7 +182,7 @@
 			 *
 			 */
 			emitValue() {
-				this.$emit('input', [Number(this.CONTROL_MIN.VALUE), Number(this.CONTROL_MAX.VALUE)]);
+				this.$emit('input', [Number(this.CONTROL_MIN.VALUE), Number(this.CONTROL_MAX.VALUE)])
 			},
 
 
@@ -245,7 +250,7 @@
 					const TYPE = this.$currentTarget.__TYPE
 
 					// Horizontal layout
-					if (this.direction === 'horizontal') {
+					if (this.orientation === 'horizontal') {
 						const X = this.getX(TYPE)
 						this[TYPE].X += (X - this[TYPE].X) * this.EASE
 						this.$currentTarget.style.transform = `translate3d(${this[TYPE].X}px, 0, 0)`
@@ -256,7 +261,7 @@
 					}
 
 					// Vertical layout
-					if (this.direction === 'vertical') {
+					if (this.orientation === 'vertical') {
 						const Y = this.getY(TYPE)
 						this[TYPE].Y += (Y - this[TYPE].Y) * this.EASE
 						this.$currentTarget.style.transform = `translate3d(0, ${this[TYPE].Y}px, 0)`
@@ -319,9 +324,9 @@
 			 * @param  {Number} event.clientY The current Y pointer position
 			 */
 			mousedownHandler({ target, clientX , clientY }) {
-				document.addEventListener('mousemove', this);
-				document.addEventListener('mouseup', this);
-				this.start(target, clientX, clientY);
+				document.addEventListener('mousemove', this)
+				document.addEventListener('mouseup', this)
+				this.start(target, clientX, clientY)
 			},
 
 
@@ -332,8 +337,8 @@
 			 * @param  {Object} e The event's object
 			 */
 			mouseupHandler(e) {
-				document.removeEventListener('mousemove', this);
-				document.removeEventListener('mouseup', this);
+				document.removeEventListener('mousemove', this)
+				document.removeEventListener('mouseup', this)
 				this.end()
 			},
 
@@ -342,12 +347,56 @@
 			/**
 			 * Document mousemove event's handler
 			 *
-			 * @param  {Number} options.clientX The current X pointer position
-			 * @param  {Number} options.clientY The current Y pointer position
+			 * @param  {Number} event.clientX The current X pointer position
+			 * @param  {Number} event.clientY The current Y pointer position
 			 */
 			mousemoveHandler({ clientX , clientY }) {
-				this.updatePointerPosition(clientX, clientY);
+				this.updatePointerPosition(clientX, clientY)
 			},
+
+
+
+			/**
+			 * The control's touchstart event's handler
+			 *
+			 * @param  {Object} event.target  The target of the event
+			 * @param  {Array}  event.touches The list of all the touch
+			 */
+			touchstartHandler({ target, touches }) {
+				this.EASE = 1
+				document.addEventListener('touchmove', this, { passive: false })
+				document.addEventListener('touchend', this)
+				const X = touches[0].clientX
+				const Y = touches[0].clientY
+				this.start(target, X, Y)
+			},
+
+
+
+			/**
+			 * The document's touchend handler
+			 *
+			 * @param  {Object} e The event's object
+			 */
+			touchendHandler(e) {
+				document.removeEventListener('touchmove', this)
+				document.removeEventListener('touchend', this)
+				this.end()
+			},
+
+
+
+			/**
+			 * The document's touchmove handler
+			 *
+			 * @param  {Object} e The event's object
+			 */
+			touchmoveHandler(e) {
+				e.preventDefault()
+				const X = e.touches[0].clientX
+				const Y = e.touches[0].clientY
+				this.updatePointerPosition(X, Y)
+			}
 		},
 
 		watch: {
@@ -362,7 +411,7 @@
 			this.$slider = this.$el
 			this.$filled = this.$el.querySelector('.range-slider__filled')
 
-			this.$controls = this.$el.querySelectorAll('.range-slider__control');
+			this.$controls = this.$el.querySelectorAll('.range-slider__control')
 			this.$controls[0].__TYPE = 'CONTROL_MIN'
 			this.$controls[1].__TYPE = 'CONTROL_MAX'
 
@@ -385,6 +434,13 @@
 		position: relative;
 		user-select: none;
 		cursor: default;
+		box-sizing: border-box;
+
+		*,
+		*:after,
+		*:before {
+			box-sizing: inherit;
+		}
 	}
 
 	.range-slider--horizontal {
@@ -454,7 +510,6 @@
 		display: block;
 		padding: 1em;
 		line-height: 1;
-		pointer-events: none;
 
 		.range-slider--horizontal & {
 			left: 50%;
