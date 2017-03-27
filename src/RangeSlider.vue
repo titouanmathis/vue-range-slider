@@ -4,10 +4,10 @@
 			<div class="range-slider__filled"></div>
 		</div>
 		<div class="range-slider__control range-slider__control--min" @mousedown="mousedownHandler" @touchstart="touchstartHandler">
-			<span class="range-slider__tooltip range-slider__tooltip--top" v-html="formatValue(CONTROL_MIN.VALUE)"></span>
+			<span class="range-slider__tooltip range-slider__tooltip--top" v-html="formatValue(VALUE_MIN)"></span>
 		</div>
 		<div class="range-slider__control range-slider__control--max" @mousedown="mousedownHandler" @touchstart="touchstartHandler">
-			<span class="range-slider__tooltip range-slider__tooltip--bottom" v-html="formatValue(CONTROL_MAX.VALUE)"></span>
+			<span class="range-slider__tooltip range-slider__tooltip--bottom" v-html="formatValue(VALUE_MAX)"></span>
 		</div>
 	</div>
 </template>
@@ -53,6 +53,7 @@
 		},
 		data() {
 			return {
+				HAS_INTERACTION: false,
 				IS_LOOPING: false,
 				EASE: 0.25,
 				POINTER_X: 0,
@@ -63,13 +64,11 @@
 				Y_MAX: 100,
 				CONTROL_MIN: {
 					X: 0,
-					Y: 0,
-					VALUE: this.value[0]
+					Y: 0
 				},
 				CONTROL_MAX: {
 					X: 0,
-					Y: 0,
-					VALUE: this.value[1]
+					Y: 0
 				},
 				SLIDER_WIDTH: 0,
 				SLIDER_HEIGHT: 0,
@@ -78,51 +77,58 @@
 			}
 		},
 		computed: {
+
+			/**
+			 * Get the number of decimals to display
+			 * from the given `step` value
+			 */
 			DECIMALS() {
 				let decimals = `${this.step}`.split('.')[1]
 				return decimals ? decimals.length : 0
-			}
-		},
-		methods: {
-
-			/**
-			 * Initialize the controls positions
-			 */
-			init() {
-				this.CONTROL_MIN.X = this.value[0] * this.SLIDER_WIDTH / this.max
-				this.CONTROL_MIN.Y = this.value[0] * this.SLIDER_HEIGHT / this.max
-				this.CONTROL_MAX.X = this.value[1] * this.SLIDER_WIDTH / this.max
-				this.CONTROL_MAX.Y = this.value[1] * this.SLIDER_HEIGHT / this.max
-
-
-				let VALUE_MIN
-				let VALUE_MAX
-
-				if (this.orientation === 'horizontal') {
-					this.$filled.style.left = `${this.CONTROL_MIN.X}px`
-					this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
-					VALUE_MIN = Math.round((this.CONTROL_MIN.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
-					VALUE_MAX = Math.round((this.CONTROL_MAX.X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
-				} else {
-					this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
-					this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
-					VALUE_MIN = Math.round((this.CONTROL_MIN.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
-					VALUE_MAX = Math.round((this.CONTROL_MAX.Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
-				}
-
-				this.CONTROL_MIN.VALUE = VALUE_MIN.toFixed(this.DECIMALS)
-				this.CONTROL_MAX.VALUE = VALUE_MAX.toFixed(this.DECIMALS)
-
-				this.forEach(this.$controls, ($control) => {
-					const TYPE = $control.__TYPE
-					if (this.orientation === 'horizontal') {
-						$control.style.transform = `translate3d(${this[TYPE].X}px, 0, 0)`
-					} else {
-						$control.style.transform = `translate3d(0, ${this[TYPE].Y}px, 0)`
-					}
-				})
 			},
 
+			/**
+			 * Get the range between the minimum
+			 * and the maximum values
+			 */
+			DIFF() {
+				return this.max - this.min
+			},
+
+			/**
+			 * Get the minimum value from
+			 * the current minium X position
+			 */
+			VALUE_MIN() {
+				let VALUE
+
+				if (this.orientation === 'horizontal') {
+					VALUE = Math.round(((this.CONTROL_MIN.X * this.DIFF / this.SLIDER_WIDTH) + this.min) / this.step) * this.step
+				} else {
+					VALUE = Math.round(((this.CONTROL_MIN.Y * this.DIFF / this.SLIDER_HEIGHT) + this.min) / this.step) * this.step
+				}
+
+				return VALUE.toFixed(this.DECIMALS)
+			},
+
+			/**
+			 * Get the maximum value from
+			 * the current maximum X position
+			 */
+			VALUE_MAX() {
+				let VALUE
+
+				if (this.orientation === 'horizontal') {
+					VALUE = Math.round(((this.CONTROL_MAX.X * this.DIFF / this.SLIDER_WIDTH) + this.min) / this.step) * this.step
+				} else {
+					VALUE = Math.round(((this.CONTROL_MAX.Y * this.DIFF / this.SLIDER_HEIGHT) + this.min) / this.step) * this.step
+				}
+
+				return VALUE.toFixed(this.DECIMALS)
+			}
+
+		},
+		methods: {
 
 
 			/**
@@ -138,6 +144,8 @@
 				if (!$target.__TYPE) {
 					$target = $target.parentElement
 				}
+
+				this.HAS_INTERACTION = true
 
 				this.updatePointerPosition(POINTER_X, POINTER_Y)
 				this.X = this.getX($target.__TYPE)
@@ -155,6 +163,7 @@
 			end() {
 				this.$currentTarget = null
 				this.IS_LOOPING = false
+				this.HAS_INTERACTION = false
 				this.emitValue()
 			},
 
@@ -190,12 +199,33 @@
 			},
 
 
+
+			/**
+			 * Update the current value and the
+			 * controls positions
+			 *
+			 * @param  {Array} VALUE The new value
+			 */
+			updateValue(VALUE) {
+				this.CONTROL_MIN.X = (VALUE[0] - this.min) * this.SLIDER_WIDTH / this.DIFF
+				this.CONTROL_MIN.Y = (VALUE[0] - this.min) * this.SLIDER_HEIGHT / this.DIFF
+
+				this.CONTROL_MAX.X = (VALUE[1] - this.min) * this.SLIDER_WIDTH / this.DIFF
+				this.CONTROL_MAX.Y = (VALUE[1] - this.min) * this.SLIDER_HEIGHT / this.DIFF
+
+				this.updatePosition()
+			},
+
+
+
 			/**
 			 * Emit the current value to the parent
 			 *
 			 */
 			emitValue() {
-				this.$emit('input', [Number(this.CONTROL_MIN.VALUE), Number(this.CONTROL_MAX.VALUE)])
+				const min = Number(this.VALUE_MIN).toFixed(this.DECIMALS)
+				const max = Number(this.VALUE_MAX).toFixed(this.DECIMALS)
+				this.$emit('input', [Number(min), Number(max)])
 			},
 
 
@@ -261,35 +291,42 @@
 
 				if (this.$currentTarget !== null) {
 					const TYPE = this.$currentTarget.__TYPE
-					let VALUE;
 
 					// Horizontal layout
 					if (this.orientation === 'horizontal') {
 						const X = this.getX(TYPE)
 						this[TYPE].X += (X - this[TYPE].X) * this.EASE
-						this.$currentTarget.style.transform = `translate3d(${this[TYPE].X}px, 0, 0)`
-						this.$filled.style.left = `${this.CONTROL_MIN.X}px`
-						this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
-
-						VALUE = Math.round((this[TYPE].X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
 					}
 
 					// Vertical layout
 					if (this.orientation === 'vertical') {
 						const Y = this.getY(TYPE)
 						this[TYPE].Y += (Y - this[TYPE].Y) * this.EASE
-						this.$currentTarget.style.transform = `translate3d(0, ${this[TYPE].Y}px, 0)`
-						this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
-						this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
-
-						VALUE = Math.round((this[TYPE].Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
 					}
 
-					this[TYPE].VALUE = VALUE.toFixed(this.DECIMALS)
-
+					this.updatePosition()
 					if (!this.lazy) this.emitValue()
 				}
 				requestAnimationFrame(this.loop.bind(this))
+			},
+
+
+
+			/**
+			 * Update the elements' positions
+			 */
+			updatePosition() {
+				if (this.orientation === 'horizontal') {
+					this.$controls[0].style.transform = `translate3d(${this.CONTROL_MIN.X}px, 0, 0)`
+					this.$controls[1].style.transform = `translate3d(${this.CONTROL_MAX.X}px, 0, 0)`
+					this.$filled.style.left = `${this.CONTROL_MIN.X}px`
+					this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
+				} else {
+					this.$controls[0].style.transform = `translate3d(0, ${this.CONTROL_MIN.Y}px, 0)`
+					this.$controls[1].style.transform = `translate3d(0, ${this.CONTROL_MAX.Y}px, 0)`
+					this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
+					this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
+				}
 			},
 
 
@@ -418,8 +455,27 @@
 		},
 
 		watch: {
+
+			/**
+			 * Initialize the loop when the
+			 * `IS_LOOPING` is set to `true`
+			 *
+			 * @param {Boolean} newValue The new value of the var
+			 */
 			IS_LOOPING(newValue) {
 				if (newValue) this.loop()
+			},
+
+			/**
+			 * Watch the change of the `value` prop
+			 * and update the component if the change
+			 * is not coming from direct interaction
+			 * with the component via mouse or touch
+			 *
+			 * @param  {Array} newValue The new value of the var
+			 */
+			value(newValue) {
+				if (!this.HAS_INTERACTION) this.updateValue(newValue)
 			}
 		},
 
@@ -433,8 +489,8 @@
 			this.$controls[0].__TYPE = 'CONTROL_MIN'
 			this.$controls[1].__TYPE = 'CONTROL_MAX'
 
-			this.updateSizes();
-			this.init()
+			this.updateSizes()
+			this.updateValue(this.value)
 
 			window.addEventListener('resize', this)
 		},
