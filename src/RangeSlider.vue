@@ -53,6 +53,7 @@
 		},
 		data() {
 			return {
+				HAS_INTERACTION: false,
 				IS_LOOPING: false,
 				EASE: 0.25,
 				POINTER_X: 0,
@@ -139,6 +140,8 @@
 					$target = $target.parentElement
 				}
 
+				this.HAS_INTERACTION = true
+
 				this.updatePointerPosition(POINTER_X, POINTER_Y)
 				this.X = this.getX($target.__TYPE)
 				this.Y = this.getY($target.__TYPE)
@@ -155,6 +158,7 @@
 			end() {
 				this.$currentTarget = null
 				this.IS_LOOPING = false
+				this.HAS_INTERACTION = false
 				this.emitValue()
 			},
 
@@ -188,6 +192,28 @@
 				this.Y_MIN = SIZES.top
 				this.Y_MAX = SIZES.top + SIZES.height
 			},
+
+
+
+			/**
+			 * Update the current value and the
+			 * controls positions
+			 *
+			 * @param  {Array} VALUE The new value
+			 */
+			updateValue(VALUE) {
+				this.CONTROL_MIN.VALUE = VALUE[0]
+				this.CONTROL_MAX.VALUE = VALUE[1]
+
+				this.CONTROL_MIN.X = VALUE[0] * this.SLIDER_WIDTH / this.max
+				this.CONTROL_MIN.Y = VALUE[0] * this.SLIDER_HEIGHT / this.max
+
+				this.CONTROL_MAX.X = VALUE[1] * this.SLIDER_WIDTH / this.max
+				this.CONTROL_MAX.Y = VALUE[1] * this.SLIDER_HEIGHT / this.max
+
+				this.updatePosition()
+			},
+
 
 
 			/**
@@ -267,10 +293,6 @@
 					if (this.orientation === 'horizontal') {
 						const X = this.getX(TYPE)
 						this[TYPE].X += (X - this[TYPE].X) * this.EASE
-						this.$currentTarget.style.transform = `translate3d(${this[TYPE].X}px, 0, 0)`
-						this.$filled.style.left = `${this.CONTROL_MIN.X}px`
-						this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
-
 						VALUE = Math.round((this[TYPE].X * this.max / this.SLIDER_WIDTH) / this.step) * this.step
 					}
 
@@ -278,18 +300,34 @@
 					if (this.orientation === 'vertical') {
 						const Y = this.getY(TYPE)
 						this[TYPE].Y += (Y - this[TYPE].Y) * this.EASE
-						this.$currentTarget.style.transform = `translate3d(0, ${this[TYPE].Y}px, 0)`
-						this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
-						this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
-
 						VALUE = Math.round((this[TYPE].Y * this.max / this.SLIDER_HEIGHT) / this.step) * this.step
 					}
 
+					this.updatePosition()
 					this[TYPE].VALUE = VALUE.toFixed(this.DECIMALS)
 
 					if (!this.lazy) this.emitValue()
 				}
 				requestAnimationFrame(this.loop.bind(this))
+			},
+
+
+
+			/**
+			 * Update the elements' positions
+			 */
+			updatePosition() {
+				if (this.orientation === 'horizontal') {
+					this.$controls[0].style.transform = `translate3d(${this.CONTROL_MIN.X}px, 0, 0)`
+					this.$controls[1].style.transform = `translate3d(${this.CONTROL_MAX.X}px, 0, 0)`
+					this.$filled.style.left = `${this.CONTROL_MIN.X}px`
+					this.$filled.style.right = `${this.SLIDER_WIDTH - this.CONTROL_MAX.X}px`
+				} else {
+					this.$controls[0].style.transform = `translate3d(0, ${this.CONTROL_MIN.Y}px, 0)`
+					this.$controls[1].style.transform = `translate3d(0, ${this.CONTROL_MAX.Y}px, 0)`
+					this.$filled.style.top = `${this.CONTROL_MIN.Y}px`
+					this.$filled.style.bottom = `${this.SLIDER_HEIGHT - this.CONTROL_MAX.Y}px`
+				}
 			},
 
 
@@ -420,6 +458,9 @@
 		watch: {
 			IS_LOOPING(newValue) {
 				if (newValue) this.loop()
+			},
+			value(newValue) {
+				if (!this.HAS_INTERACTION) this.updateValue(newValue)
 			}
 		},
 
