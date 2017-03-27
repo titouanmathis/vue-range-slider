@@ -5,8 +5,22 @@ new Vue({
 	el: '#app',
 	data() {
 		return {
-			MODEL_HORIZONTAL: [15, 50],
-			MODEL_VERTICAL: [3, 12],
+			MODELS: [
+				{
+					MIN: 0,
+					MAX: 100,
+					VALUE: [15, 50],
+					STEP: 1,
+					ORIENTATION: 'horizontal'
+				},
+				{
+					MIN: 20,
+					MAX: 40,
+					VALUE: [22, 36],
+					STEP: 1,
+					ORIENTATION: 'vertical'
+				}
+			],
 			style: {
 				section: {
 					display: 'flex',
@@ -33,30 +47,17 @@ new Vue({
 	},
 	template: `
 <main>
-	<section :style="style.section">
-		<h3 v-html="MODEL_HORIZONTAL"></h3>
-		<p :style="style.btn" @click="MODEL_HORIZONTAL = [0, 100]">Reset</p>
+	<section :style="style.section" v-for="MODEL in MODELS">
+		<h3 v-html="MODEL.VALUE"></h3>
+		<p :style="style.btn" @click="MODEL.VALUE = [MODEL.MIN, MODEL.MAX]">Reset</p>
 		<range-slider
-			v-model="MODEL_HORIZONTAL"
-			:min="0"
-			:max="100"
-			:step="1"
+			v-model="MODEL.VALUE"
+			:min="MODEL.MIN"
+			:max="MODEL.MAX"
+			:step="MODEL.STEP"
 			formatter="{value}€"
-			orientation="horizontal"
+			:orientation="MODEL.ORIENTATION"
 			:style="style.rangeSlider">
-		</range-slider>
-	</section>
-	<section :style="style.section">
-		<h3 v-html="MODEL_VERTICAL"></h3>
-		<p :style="style.btn" @click="MODEL_VERTICAL = [0, 20]">Reset</p>
-		<range-slider
-			v-model="MODEL_VERTICAL"
-			:min="0"
-			:max="20"
-			:step="0.1"
-			:lazy="true"
-			formatter="{value}kg"
-			orientation="vertical">
 		</range-slider>
 	</section>
 </main>`
