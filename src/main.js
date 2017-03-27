@@ -20,6 +20,10 @@ new Vue({
 				},
 				rangeSlider: {
 					marginTop: '2em'
+				},
+				btn: {
+					margin: '0 0 2em',
+					borderBottom: '1px solid'
 				}
 			}
 		}
@@ -31,6 +35,7 @@ new Vue({
 <main>
 	<section :style="style.section">
 		<h3 v-html="MODEL_HORIZONTAL"></h3>
+		<p :style="style.btn" @click="MODEL_HORIZONTAL = [0, 100]">Reset</p>
 		<range-slider
 			v-model="MODEL_HORIZONTAL"
 			:min="0"
@@ -43,6 +48,7 @@ new Vue({
 	</section>
 	<section :style="style.section">
 		<h3 v-html="MODEL_VERTICAL"></h3>
+		<p :style="style.btn" @click="MODEL_VERTICAL = [0, 20]">Reset</p>
 		<range-slider
 			v-model="MODEL_VERTICAL"
 			:min="0"
