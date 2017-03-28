@@ -139,6 +139,10 @@
 			 * @param  {Number} POINTER_Y The current pointer Y position
 			 */
 			start($target, POINTER_X, POINTER_Y) {
+				// Udpate sizes on start to prevent
+				// weird positionning when component
+				// is activated via a `v-if` statement
+				this.updateSizes()
 				// Make sure our target is the
 				// control and not the tooltip
 				if (!$target.__TYPE) {
